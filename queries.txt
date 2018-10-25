@@ -1,0 +1,73 @@
+// Creating the collection 
+
+db.createCollection(‘product’)
+
+// Indexing
+
+db.product.createIndex({'price.discount' : -1}, {name:'idx_dscnt_prc'})
+db.product.createIndex( { 'brand' : 1, 'price.regular' : -1 }, { name : "idx_dgtl_cmr", partialfilterexpression  : { 'product_type' : 'digital_camera' } } )
+db.product.createIndex( {'hard_drive.hdd_type':1,'hard_drive.hdd_size.size':1, 'OS':1}, { name :  "idx_hdd", partialfilterexpression : { 'product_type' : 'desktop_computer' } } )
+db.product.createIndex( {'resolution':'text'}, { name : 'idx_tv', partialfilterexpression : { 'product_type' : 'television' } } )
+
+
+// Inserting data
+mongo –host gpel11.cs.ou.edu:40041 myDB catalogInsertion.js
+// Alternate:
+// load(‘./catalogInsertion.js’)
+
+
+// Queries
+db.product.find({'product_type': { $eq: 'television'  }}).limit(30)
+
+db.product.find().sort({ 'price.discount' : -1 }).limit(30)
+
+db.product.find({'brand': { $eq : 'Sony' }, 'price.regular' : { $gt:1000.0, $lt:1500.00 }, 'product_type' : { $eq : 'digital_camera' }})
+db.product.find({'brand': { $eq : 'Canon' }, 'price.regular' : { $gt:500.0, $lt:1000.00 }, 'product_type' : { $eq : 'digital_camera' }})
+db.product.find({'brand': { $eq : 'Canon' }, 'price.regular' : { $gt:400.0, $lt:500.00 }, 'product_type' : { $eq : 'digital_camera' }})
+
+db.product.find({'hard_drive.hdd_size.size' : { $gt : 200 }, $or : [ { 'OS' : { $eq : 'Windows 8.1'  } },{ 'OS' : { $eq : 'Windows 10' } } ] })
+db.product.find({'hard_drive.hdd_size.size' : { $gt : 200 }, $or : [ { 'OS' : { $eq : 'Windows 8.1'  } },{ 'OS' : { $eq : 'Windows 10' } } ] }).count()
+db.product.find({'hard_drive.hdd_size.size' : { $gt : 319 }, $or : [ { 'OS' : { $eq : 'Windows 8.1'  } },{ 'OS' : { $eq : 'Windows 10' } } ] }).count()
+db.product.find({'hard_drive.hdd_size.size' : { $gt : 160 }, $or : [ { 'OS' : { $eq : 'Windows 8.1'  } },{ 'OS' : { $eq : 'Windows 10' } } ] }).count()
+
+
+db.product.remove({ $text : {$search : "480i"},  'product_type': 'television' })
+db.product.remove({ $text : {$search : "480p"},  'product_type': 'television' })
+db.product.remove({ $text : {$search : "720i 720p 1080i 1080p"},  'product_type': 'television' })
+
+
+
+//CONFIGSVR
+gaur4004@gpel11:~$ mongod --configsvr --port 40041 --dbpath ~/hw3db/configsvra
+gaur4004@gpel12:~$ mongod --configsvr --port 40042 --dbpath ~/hw3db/configsvrb
+gaur4004@gpel13:~$ mongod --configsvr --port 40043 --dbpath ~/hw3db/configsvrc
+
+//MONGOS
+gaur4004@gpel11:~$ mongos --port 40044 --configdb gpel11.cs.ou.edu:40041,gpel12.cs.ou.edu:40042,gpel13.cs.ou.edu:40043
+
+//SHARDS
+gaur4004@gpel11:~$ mongod --port 40045 --dbpath ~/hw3db/sharda
+gaur4004@gpel12:~$ mongod --port 40046 --dbpath ~/hw3db/shardb
+gaur4004@gpel13:~$ mongod --port 40047 --dbpath ~/hw3db/shardc
+
+//ADDING SHARDS
+sh.addShard('gpel11.cs.ou.edu:40045')
+sh.addShard('gpel12.cs.ou.edu:40046') 
+sh.addShard('gpel13.cs.ou.edu:40047')  
+
+//ENABLE SHARDING
+sh.enableSharding('mydb')
+sh.shardCollection('mydb.product', {'_id':"hashed"})
+
+// Replication
+// CREATE DIRECTORIES
+mkdir -p ./hw3db/rs1 ./hw3db/rs2 ./hw3db/rs3
+
+---CREATE REPLICA SET SERVICES
+mongod --port 40041 --dbpath ~/hw3db/rs1 --replSet rsakshay (gpel11)
+mongod --port 40042 --dbpath ~/hw3db/rs2 --replSet rsakshay (gpel11)
+mongod --port 40043 --dbpath ~/hw3db/rs3 --replSet rsakshay (gpel11)
+
+---ADD REPLICAS
+rs.add('gpel11.cs.ou.edu:40042')
+rs.add('gpel11.cs.ou.edu:40043')
