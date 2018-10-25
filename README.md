@@ -83,3 +83,17 @@ Every product has a unique product ID (product\_id). The product types and their
         b. Immediately connect to another active MongoDB server in your replica set and run the command rs.status(). Take a screenshot that shows that no primary has yet been elected.
     
         c. Wait until a primary has been elected, and then run the queries (2-5) one time each again with the remaining nodes. Provide screenshots for the output of each run
+
+## Screenshots
+
+![Screen1](1.png)
+
+![Screen2](2.png)
+
+![Screen3](3.png)
+
+![Screen4](4.png)
+
+![Screen5](5.png)
+
+![Screen6](6.png)
